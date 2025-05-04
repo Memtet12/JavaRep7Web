@@ -1,27 +1,32 @@
 package com.example.accounts;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.SQLException;
+import com.example.DBService.DBService;
 
 
 public class AccountService {
-    private final Map<String, UserProfile> loginToProfile;
+    private final DBService dbService;
     public static final String ACCOUNT_SERVICE_ATTRIBUTE = "accountService";
 
+
     public AccountService() {
-        loginToProfile = new HashMap<>();
-        addNewUser(new UserProfile("Andrey", "12345", "eldotefc@gmail.com"));
+        try {
+            this.dbService = new DBService();
+        } catch (SQLException ex) {
+            throw new RuntimeException("AccountService: Failed to initialize DBService class", ex);
+        }
     }
 
     public String getUserHomeDir(String login) {
-        String targetDir = "C:\\Users\\home\\" + login + "\\";
+        String targetDir = "C:\\Users\\filemanager\\" + login + "\\";
         File dir = new File(targetDir);
 
         if (!dir.exists()) {
             try {
                 if (!dir.mkdirs()) {
-                    String fallbackDir = System.getProperty("java.io.tmpdir") + "home\\" + login + "\\";
+                    // Если не получилось, используем временную директорию
+                    String fallbackDir = System.getProperty("java.io.tmpdir") + "filemanager\\" + login + "\\";
                     new File(fallbackDir).mkdirs();
                     System.out.println("Используем временную директорию: " + fallbackDir);
                     return fallbackDir;
@@ -35,16 +40,24 @@ public class AccountService {
     }
 
     public void addNewUser(UserProfile profile) {
-        loginToProfile.put(profile.getLogin(), profile);
-        createTestFilesStructure(profile.getLogin());
+        try {
+            dbService.addUser(profile);
+            createTestFilesStructure(profile.getLogin());
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to add user", e);
+        }
     }
 
     public UserProfile getUserByLogin(String login) {
-        return loginToProfile.get(login);
+        try {
+            return dbService.getUserByLogin(login);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get user", e);
+        }
     }
 
     public boolean checkUser(String login, String password) {
-        UserProfile profile = loginToProfile.get(login);
+        UserProfile profile = getUserByLogin(login);
         return profile != null && profile.getPassword().equals(password);
     }
 
@@ -54,16 +67,16 @@ public class AccountService {
 
         try {
             // Создаем несколько тестовых папок
-            new File(userDir + "Документы").mkdirs();
-            new File(userDir + "Изображения").mkdirs();
-            new File(userDir + "Музыка").mkdirs();
+            new File(userDir + "Documents").mkdirs();
+            new File(userDir + "Images").mkdirs();
+            new File(userDir + "Music").mkdirs();
 
             // Создаем несколько тестовых файлов
-            createTestFile(userDir + "отчёт.txt", "отчёт, который не написан");
-            createTestFile(userDir + "Документы\\задачи.txt", "написать задачи");
-            createTestFile(userDir + "Документы\\документы.docx", "Привет мир!");
-            createTestFile(userDir + "Изображения\\photo.jpg", "");
-            createTestFile(userDir + "Музыка\\song.mp3", "");
+            createTestFile(userDir + "readme.txt", "Это тестовый файл readme");
+            createTestFile(userDir + "Documents\\notes.txt", "Важные заметки");
+            createTestFile(userDir + "Documents\\report.docx", "Это тестовый документ Word");
+            createTestFile(userDir + "Images\\photo.jpg", "Тестовое изображение");
+            createTestFile(userDir + "Music\\song.mp3", "Тестовая музыка");
         } catch (IOException e) {
             System.err.println("Ошибка при создании тестовых файлов: " + e.getMessage());
         }
@@ -76,5 +89,4 @@ public class AccountService {
             java.nio.file.Files.write(file.toPath(), content.getBytes());
         }
     }
-
 }

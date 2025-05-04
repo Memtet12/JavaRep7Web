@@ -18,10 +18,10 @@ public class MainServlet extends HttpServlet {
     private AccountService accountService;
     @Override
     public void init() throws ServletException {
-        accountService = (AccountService) getServletContext().getAttribute(AccountService.ACCOUNT_SERVICE_ATTRIBUTE);
-        if (accountService == null) {
+        try {
             accountService = new AccountService();
-            getServletContext().setAttribute(AccountService.ACCOUNT_SERVICE_ATTRIBUTE, accountService);
+        } catch (RuntimeException e) {
+            throw new ServletException("Failed to initialize AccountService", e);
         }
     }
     @Override
