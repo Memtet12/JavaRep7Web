@@ -1,7 +1,7 @@
 package com.example.servlet;
 
+import com.example.accounts.DBService.UsersDataSet;
 import com.example.accounts.AccountService;
-import com.example.accounts.UserProfile;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -33,15 +33,41 @@ public class RegisterServlet extends HttpServlet {
         String login = req.getParameter("username");
         String password = req.getParameter("password");
         String email = req.getParameter("email");
+        String error = checkRegistrationData(login, password, email);
 
-        if (accountService.getUserByLogin(login) != null) {
-            req.setAttribute("error", "Пользователь с таким логином уже существует");
+        if (error != null) {
+            req.setAttribute("error", error);
             req.getRequestDispatcher("registration.jsp").forward(req, resp);
             return;
         }
 
-        UserProfile profile = new UserProfile(login, password, email);
+        UsersDataSet profile = new UsersDataSet(login, password, email);
         accountService.addNewUser(profile);
         resp.sendRedirect("login");
+    }
+
+    private String checkRegistrationData(String login, String password, String email) {
+        String emailDomain = email.substring(email.indexOf("@") + 1).toLowerCase();
+        if (accountService.getUserByLogin(login) != null) {
+            return "Пользователь с таким именем уже существует";
+        }
+
+        if (login.length() > 100) {
+            return "Слишком длинное имя пользователя. Допускается до 100 символов";
+        }
+
+        if (password.length() > 60) {
+            return "Слишком длинный пароль. Допускается до 60 символов";
+        }
+
+        if (email.length() > 100) {
+            return "Слишком длинный адрес электронной почты. Допускается до 100 символов";
+        }
+
+        if (!emailDomain.equals("gmail.com") && !emailDomain.equals("mail.ru") && !emailDomain.equals("yandex.ru")) {
+            return "Поддерживаются только адреса gmail.com, mail.ru и yandex.ru";
+        }
+
+        return null;
     }
 }

@@ -2,10 +2,13 @@ package com.example.accounts;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import com.example.DBService.DBService;
+
+import com.example.accounts.DBService.DBService;
+import com.example.accounts.DBService.UsersDataSet;
+import org.hibernate.HibernateException;
 
 
-public class AccountService {
+public class AccountService implements AutoCloseable {
     private final DBService dbService;
     public static final String ACCOUNT_SERVICE_ATTRIBUTE = "accountService";
 
@@ -13,10 +16,11 @@ public class AccountService {
     public AccountService() {
         try {
             this.dbService = new DBService();
-        } catch (SQLException ex) {
-            throw new RuntimeException("AccountService: Failed to initialize DBService class", ex);
+        } catch (HibernateException e){
+            throw new RuntimeException("AccountService: Failed to initialize DBService class", e);
         }
     }
+
 
     public String getUserHomeDir(String login) {
         String targetDir = "C:\\Users\\filemanager\\" + login + "\\";
@@ -39,26 +43,26 @@ public class AccountService {
         return targetDir;
     }
 
-    public void addNewUser(UserProfile profile) {
+    public void addNewUser(UsersDataSet profile) {
         try {
             dbService.addUser(profile);
             createTestFilesStructure(profile.getLogin());
-        } catch (SQLException e) {
+        } catch (HibernateException e) {
             throw new RuntimeException("Failed to add user", e);
         }
     }
 
-    public UserProfile getUserByLogin(String login) {
+    public UsersDataSet getUserByLogin(String login) {
         try {
-            return dbService.getUserByLogin(login);
-        } catch (SQLException e) {
+            return dbService.getUserByName(login);
+        } catch (HibernateException e) {
             throw new RuntimeException("Failed to get user", e);
         }
     }
 
     public boolean checkUser(String login, String password) {
-        UserProfile profile = getUserByLogin(login);
-        return profile != null && profile.getPassword().equals(password);
+        UsersDataSet user = getUserByLogin(login);
+        return user != null && user.getPassword().equals(password);
     }
 
     private void createTestFilesStructure(String login) {
@@ -87,6 +91,13 @@ public class AccountService {
         if (!file.exists()) {
             file.createNewFile();
             java.nio.file.Files.write(file.toPath(), content.getBytes());
+        }
+    }
+
+    @Override
+    public void close() throws SQLException {
+        if (dbService != null) {
+            dbService.close();
         }
     }
 }

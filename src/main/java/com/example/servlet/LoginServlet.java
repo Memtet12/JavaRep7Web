@@ -1,7 +1,7 @@
 package com.example.servlet;
 
+import com.example.accounts.DBService.UsersDataSet;
 import com.example.accounts.AccountService;
-import com.example.accounts.UserProfile;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -23,7 +23,6 @@ public class LoginServlet extends HttpServlet {
             getServletContext().setAttribute(AccountService.ACCOUNT_SERVICE_ATTRIBUTE, accountService);
         }
     }
-    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
@@ -36,7 +35,7 @@ public class LoginServlet extends HttpServlet {
 
         req.getRequestDispatcher("authorization.jsp").forward(req, resp);
     }
-    @Override
+
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String login = req.getParameter("username");
@@ -44,7 +43,7 @@ public class LoginServlet extends HttpServlet {
 
         if (accountService.checkUser(login, password)) {
             HttpSession session = req.getSession();
-            UserProfile profile = accountService.getUserByLogin(login);
+            UsersDataSet profile = accountService.getUserByLogin(login);
             session.setAttribute("user", profile);
             resp.sendRedirect("explorer");
         } else {
